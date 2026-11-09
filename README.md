@@ -146,6 +146,21 @@ cd Deobfuscator-Luraph-V15
 npm install
 ```
 
+### Discord bot (host on your server)
+
+Upload this repo to any Node.js host, set your bot token, and bring it online:
+
+```bash
+cp .env.example .env   # set DISCORD_TOKEN + CLIENT_ID
+npm install
+npm run deploy-commands
+npm start              # bot comes online
+```
+
+In Discord: `/deobfuscate` → attach obfuscated `.lua` (or paste code) → receive the deobfuscated file.
+
+Full walkthrough: **[DISCORD.md](DISCORD.md)**.
+
 ### Basic Commands
 ```bash
 # Deobfuscate a single script (saves to ./output/<filename>)
