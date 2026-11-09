@@ -220,11 +220,18 @@ async function run(job) {
           args: {
             budget: args.budget,
             timeout: args.timeout,
+            max_runs: args.maxRuns || 12,
             devirt_rounds: args.devirtRounds || 200,
             studio: false,
             no_fold: args.noFold || false,
             strings: args.strings || false,
             executor: args.executor || 'Wave',
+            keep_harness: !!args.keepHarness,
+            keep_preamble: !!args.keepPreamble,
+            no_hooks: !!args.noHooks,
+            no_devirt: !!args.noDevirt,
+            debug: !!args.debug,
+            input_text: args.inputText || null,
           },
         };
         const cfgPath = job.path('.cfg.json');
@@ -283,8 +290,27 @@ async function run(job) {
         job.write(ppath, payload + '\n');
         return ppath;
       }
-      if (!fs.existsSync(job.tracePath)) writeTrace();
-      return job.tracePath;
+      // Prefer a partial VM lift over the anti-tamper probe suite (ChildRemoved /
+      // throwaway Folder trees). Probe-only traces look "successful" but contain
+      // none of the user's script.
+      const cleanedTrace = stripV14ProbeSuite(tidy.tidy(text, { preamble: false }));
+      const probeOnly = !cleanedTrace || !cleanedTrace.trim() ||
+        v14ScaffoldScore(cleanedTrace) >= 24;
+      if (!probeOnly && cleanedTrace.split('\n').filter((l) => {
+        const t = l.trim();
+        return t && !t.startsWith('--');
+      }).length >= 3) {
+        process.stderr.write('[+] returning probe-stripped behaviour trace\n');
+        const tpath = job.path('.payload.lua');
+        job.write(tpath, cleanedTrace + '\n');
+        return tpath;
+      }
+      process.stderr.write('[!] no real payload recovered from trace; returning partial lift for inspection\n');
+      const partial = '-- NOTE: partial Luraph v14 lift — bootstrap scaffolding may remain;\n'
+        + '--       full source recovery failed for this sample.\n\n'
+        + lifted;
+      job.write(dpath, partial);
+      return dpath;
     }
     const nilCalls = (lifted.match(/\(nil\)\(/g) || []).length;
     const lines = lifted.split('\n').length;

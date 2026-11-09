@@ -49,9 +49,35 @@ elif cmd == "pipeline":
         from obfuscators.luraph_v15 import driver
 
     class DummyArgs:
+        """Bridge JS camelCase / snake_case CLI options into the Python drivers."""
+
+        _DEFAULTS = {
+            "budget": 30,
+            "timeout": 90,
+            "max_runs": 12,
+            "devirt_rounds": 200,
+            "studio": False,
+            "no_fold": False,
+            "strings": False,
+            "executor": "Wave",
+            "keep_harness": False,
+            "keep_preamble": False,
+            "no_hooks": False,
+            "no_devirt": False,
+            "debug": False,
+            "input_text": None,
+            "cfg": (),
+        }
+
         def __init__(self, d):
-            for k, v in d.items():
+            for k, v in self._DEFAULTS.items():
                 setattr(self, k, v)
+            for k, v in (d or {}).items():
+                setattr(self, k, v)
+
+        def __getattr__(self, name):
+            # Be resilient to newly-added driver attributes.
+            return None
 
     args = DummyArgs(c["args"])
     job = Job(c["input"], c["source"], args, c["trace_path"], c["debug"], c["obfuscator"])

@@ -30,8 +30,8 @@ const { deobfuscateSource, detectOnly } = require('./lib/deobfuscate');
 const TOKEN = process.env.DISCORD_TOKEN || process.env.DISCORD_BOT_TOKEN;
 const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 8 * 1024 * 1024);
 const MAX_PREVIEW_CHARS = Number(process.env.MAX_PREVIEW_CHARS || 1800);
-const DEFAULT_TIMEOUT = Number(process.env.DEOB_TIMEOUT || 90);
-const DEFAULT_BUDGET = Number(process.env.DEOB_BUDGET || 30);
+const DEFAULT_TIMEOUT = Number(process.env.DEOB_TIMEOUT || 180);
+const DEFAULT_BUDGET = Number(process.env.DEOB_BUDGET || 60);
 const ALLOWED_EXTS = new Set(['.lua', '.luau', '.txt']);
 
 if (!TOKEN) {
@@ -213,11 +213,29 @@ async function handleDetectInteraction(interaction) {
   await interaction.editReply({ embeds: [embed] });
 }
 
-client.once('ready', () => {
-  console.log(`[+] Logged in as ${client.user.tag}`);
+function onReady(c) {
+  const user = (c || client).user;
+  console.log(`[+] Logged in as ${user.tag}`);
   console.log('[*] Slash commands: /deobfuscate  /detect  /ping');
   console.log('[*] Prefix fallback: !deob  (attach a .lua file or wrap code in a lua code block)');
-});
+  client.user.setPresence({
+    status: 'online',
+    activities: [{ name: '/deobfuscate | !deob', type: 3 }], // Watching
+  });
+  console.log(`[+] Presence set online — guilds: ${client.guilds.cache.size}`);
+  for (const [, guild] of client.guilds.cache) {
+    console.log(`    · ${guild.name} (${guild.id})`);
+  }
+}
+
+let _readyLogged = false;
+function onReadyOnce(c) {
+  if (_readyLogged) return;
+  _readyLogged = true;
+  onReady(c);
+}
+client.once('clientReady', onReadyOnce);
+client.once('ready', onReadyOnce);
 
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
