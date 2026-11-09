@@ -1,17 +1,34 @@
 {
   "name": "luraphv15-node",
-  "version": "1.0.0",
-  "description": "Luraph v15 deobfuscator - Node.js port",
+  "version": "1.1.0",
+  "description": "Luraph v15 deobfuscator - Node.js port with Discord bot",
   "main": "deob.js",
   "bin": {
     "deob": "./deob.js"
   },
   "scripts": {
-    "start": "node deob.js",
-    "test": "node deob.js samples/001_vm_like_dispatch-obfuscated.lua"
+    "start": "node discord-bot.js",
+    "bot": "node discord-bot.js",
+    "deob": "node deob.js",
+    "deploy-commands": "node deploy-commands.js",
+    "test": "node deob.js sample/5ae248d6527b5c01.lua -o /tmp/deob-test-out.lua"
   },
-  "keywords": ["luraph", "deobfuscator", "roblox", "luau"],
+  "keywords": [
+    "luraph",
+    "deobfuscator",
+    "roblox",
+    "luau",
+    "discord",
+    "discord-bot"
+  ],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7"
+  }
 }

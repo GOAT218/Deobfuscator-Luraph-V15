@@ -8,7 +8,20 @@ const http = require('http');
 
 const HERE = __dirname;
 const BIN = path.join(HERE, '..', 'bin');
-const LUAU_URL = 'https://github.com/luau-lang/luau/releases/latest/download/luau-windows.zip';
+const LUAU_RELEASES = {
+  win32: {
+    url: 'https://github.com/luau-lang/luau/releases/latest/download/luau-windows.zip',
+    names: ['luau.exe', 'luau-ast.exe'],
+  },
+  linux: {
+    url: 'https://github.com/luau-lang/luau/releases/latest/download/luau-ubuntu.zip',
+    names: ['luau', 'luau-ast'],
+  },
+  darwin: {
+    url: 'https://github.com/luau-lang/luau/releases/latest/download/luau-macos.zip',
+    names: ['luau', 'luau-ast'],
+  },
+};
 
 const HEARTBEAT = 2;
 const STALL = 600;
@@ -24,16 +37,25 @@ function findLuau() {
     const p = path.join(d, exe);
     if (fs.existsSync(p)) { _luauExe = p; return p; }
   }
-  if (process.platform !== 'win32') {
-    throw new Error('luau not found: build it with build_luau.py or put it in ' + BIN);
+
+  const release = LUAU_RELEASES[process.platform];
+  if (!release) {
+    throw new Error(`luau not found and no download is available for platform ${process.platform}. Put a binary in ${BIN}`);
   }
+
   process.stderr.write('[*] downloading Luau runtime...\n');
   process.stderr.write('[!] stock Luau lacks Vector3 members: build the patched runtime with build_luau.py\n');
   fs.mkdirSync(BIN, { recursive: true });
   const zipPath = path.join(BIN, 'luau.zip');
-  _downloadSync(LUAU_URL, zipPath);
-  _extractZip(zipPath, BIN, ['luau.exe', 'luau-ast.exe']);
+  _downloadSync(release.url, zipPath);
+  _extractZip(zipPath, BIN, release.names);
   fs.unlinkSync(zipPath);
+  for (const name of release.names) {
+    try { fs.chmodSync(path.join(BIN, name), 0o755); } catch {}
+  }
+  if (!fs.existsSync(local)) {
+    throw new Error(`downloaded Luau package but ${local} is still missing`);
+  }
   _luauExe = local;
   return local;
 }
